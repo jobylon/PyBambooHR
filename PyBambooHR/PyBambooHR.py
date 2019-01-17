@@ -11,6 +11,8 @@ to BambooHR API calls defined at http://www.bamboohr.com/api/documentation/.
 """
 
 import datetime
+import io
+import mimetypes
 import requests
 import xmltodict
 from . import utils
@@ -346,6 +348,28 @@ class PyBambooHR(object):
             r = requests.post(url, headers=self.headers, auth=(self.api_key, ''), files=params)
             r.raise_for_status()
         return True
+
+    def upload_employee_file_from_url(self, employee_id, category_id, file_name, file_url, share=False):
+        """
+        Alternative method to upload file through an url
+
+        @param employee_id: String of the employee id.
+        @param category_id: The category id to upload the file to
+        @param file_name: File name in BambooHR
+        @file_url: file's location url
+        @param share: Boolean indicating if the file is shared with employee
+        """
+        file_content = io.BytesIO(requests.get(file_url).content)
+        file_ct = mimetypes.guess_type(file_name)[0]
+        params = {
+            'file': (file_name, file_content.getvalue(), file_ct),
+            'fileName': (None, file_name),
+            'category': (None, str(category_id)),
+            'share': (None, 'yes' if share else 'no'),
+        }
+        url = self.base_url + 'employees/{}/files/'.format(employee_id)
+        r = requests.post(url, headers=self.headers, auth=(self.api_key, ''), files=params)
+        r.raise_for_status()
 
     def get_employee_files_list(self, employee_id):
         """
