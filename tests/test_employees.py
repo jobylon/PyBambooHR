@@ -9,6 +9,7 @@
 """
 
 import httpretty
+import json
 import os
 import sys
 import unittest
@@ -229,58 +230,56 @@ class test_employees(unittest.TestCase):
 
     @httpretty.activate
     def test_get_tabular_data(self):
-        xml = """<?xml version="1.0"?>
-                 <table>
-                     <row id="321" employeeId="123">
-                         <field id="customTypeA">Value A</field>
-                         <field id="customTypeB">Value B</field>
-                         <field id="customTypeC">Value C</field>
-                     </row>
-                 </table>"""
+        resp = [{
+            'date': '2010-06-01',
+            'location': 'New York Office',
+            'divison': 'Sprockets',
+            'department': 'Research and Development',
+            'jobTitle': 'Machinist',
+            'reportsTo': 'John Smith'
+        }]
         httpretty.register_uri(httpretty.GET,
                                "https://api.bamboohr.com/api/gateway.php/test/v1/employees/123/tables/customTable",
-                               body=xml,
-                               content_type="application/xml")
+                               body=json.dumps(resp),
+                               content_type="application/json")
         table = self.bamboo.get_tabular_data('customTable', 123)
-        d = {'123': [{'customTypeA': 'Value A',
-                      'customTypeB': 'Value B',
-                      'customTypeC': 'Value C',
-                      'row_id': '321'}]}
 
         self.assertIsNotNone(table)
-        self.assertEqual(d, table)
+        self.assertEqual(len(table), 1)
+        self.assertEqual(table[0]['location'], 'New York Office')
+        self.assertEqual(table[0]['reportsTo'], 'John Smith')
 
     @httpretty.activate
     def test_get_tabular_data_all_employees(self):
-        xml = """<?xml version="1.0"?>
-                 <table>
-                     <row id="321" employeeId="123">
-                         <field id="customTypeA">Value A</field>
-                         <field id="customTypeB">Value B</field>
-                         <field id="customTypeC">Value C</field>
-                     </row>
-                     <row id="322" employeeId="333">
-                         <field id="customTypeA">333 Value A</field>
-                         <field id="customTypeB">333 Value B</field>
-                         <field id="customTypeC">333 Value C</field>
-                     </row>
-                 </table>"""
+        resp = [{
+            'id': '38563',
+            'employeeId': '4',
+            'date': '2016-04-09',
+            'location': 'Lindon, Utah',
+            'department': 'Human Resources',
+            'division': 'North America',
+            'jobTitle': 'Associate HR Administrator',
+            'reportsTo': 'Jennifer Caldwell'
+        },{
+            'id': '38564',
+            'employeeId': '5',
+            'date': '2018-12-09',
+            'location': 'London, UK',
+            'department': 'Human Resources',
+            'division': 'Europe',
+            'jobTitle': 'HR Administrator',
+            'reportsTo': 'Jennifer Caldwell'
+        }]
         httpretty.register_uri(httpretty.GET,
                                "https://api.bamboohr.com/api/gateway.php/test/v1/employees/all/tables/customTable",
-                               body=xml,
-                               content_type="application/xml")
+                               body=json.dumps(resp),
+                               content_type="application/json")
         table = self.bamboo.get_tabular_data('customTable')
-        d = {'123': [{'customTypeA': 'Value A',
-                      'customTypeB': 'Value B',
-                      'customTypeC': 'Value C',
-                      'row_id': '321'}],
-             '333': [{'customTypeA': '333 Value A',
-                      'customTypeB': '333 Value B',
-                      'customTypeC': '333 Value C',
-                      'row_id': '322'}]}
 
         self.assertIsNotNone(table)
-        self.assertEqual(d, table)
+        self.assertEqual(len(table), 2)
+        self.assertEqual(table[0]['id'], '38563')
+        self.assertEqual(table[1]['id'], '38564')
 
     @httpretty.activate
     def test_add_row(self):
@@ -316,3 +315,33 @@ class test_employees(unittest.TestCase):
 
         self.assertTrue(result)
 
+    @httpretty.activate
+    def test_get_employee_files_list(self):
+        xml = """<?xml version="1.0"?>
+                    <employee id="123">
+                        <category id="14">
+                            <name>Training Attachments</name>
+                        </category>
+                        <category id="15">
+                            <name>Employee Uploads</name>
+                        </category>
+                    </employee>"""
+        httpretty.register_uri(httpretty.GET,
+                               "https://api.bamboohr.com/api/gateway.php/test/v1/employees/123/files/view",
+                               body=xml,
+                               status='200')
+
+        data = self.bamboo.get_employee_files_list(123)
+        self.assertIsNotNone(data.get('employee'))
+        self.assertIsNotNone(data['employee'].get('category'))
+        self.assertEqual(len(data['employee']['category']), 2)
+        self.assertEqual(data['employee']['category'][1]['@id'], '15')
+
+    @httpretty.activate
+    def test_create_file_category(self):
+        httpretty.register_uri(httpretty.POST,
+                               "https://api.bamboohr.com/api/gateway.php/test/v1/employees/files/categories/",
+                               body='',
+                               status='201')
+        result = self.bamboo.create_employee_file_category('category_name')
+        self.assertTrue(result)

@@ -12,6 +12,7 @@ to BambooHR API calls defined at http://www.bamboohr.com/api/documentation/.
 
 import datetime
 import requests
+import xmltodict
 from . import utils
 from .utils import make_field_xml
 from os.path import basename
@@ -346,6 +347,28 @@ class PyBambooHR(object):
             r.raise_for_status()
         return True
 
+    def get_employee_files_list(self, employee_id):
+        """
+        API method for retrieving a list files and categories
+        https://www.bamboohr.com/api/documentation/employees.php#listEmployeeFiles
+        """
+        url = self.base_url + "employees/{}/files/view".format(employee_id)
+        r = requests.get(url, headers=self.headers, auth=(self.api_key, ''))
+        r.raise_for_status()
+
+        return xmltodict.parse(r.content)
+
+    def create_employee_file_category(self, category_name):
+        """
+        API method for retrieving a list files and categories
+        https://www.bamboohr.com/api/documentation/employees.php#addEmployeeCategory
+        """
+        xml = "<employee><category>{}</category></employee>".format(category_name)
+        url = self.base_url + "employees/files/categories/"
+        r = requests.post(url, data=xml, headers=self.headers, auth=(self.api_key, ''))
+        r.raise_for_status()
+        return True
+
     def add_row(self, table_name, employee_id, row):
         """
         API method for adding a row to a table
@@ -488,7 +511,7 @@ class PyBambooHR(object):
         r = requests.get(url, headers=self.headers, auth=(self.api_key, ''))
         r.raise_for_status()
 
-        return utils.transform_tabular_data(r.content)
+        return r.json()
 
     def get_employee_changes(self, since=None):
         """
