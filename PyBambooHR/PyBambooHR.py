@@ -385,11 +385,10 @@ class PyBambooHR(object):
     def create_employee_file_category(self, category_name):
         """
         API method for retrieving a list files and categories
-        https://www.bamboohr.com/api/documentation/employees.php#addEmployeeCategory
+        https://documentation.bamboohr.com/reference#add-employee-file-category-1
         """
-        xml = "<employee><category>{}</category></employee>".format(category_name)
         url = self.base_url + "employees/files/categories/"
-        r = requests.post(url, data=xml, headers=self.headers, auth=(self.api_key, ''))
+        r = requests.post(url, json=[category_name], headers=self.headers, auth=(self.api_key, ''))
         r.raise_for_status()
         return True
 
