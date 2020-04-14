@@ -380,7 +380,7 @@ class PyBambooHR(object):
         r = requests.get(url, headers=self.headers, auth=(self.api_key, ''))
         r.raise_for_status()
 
-        return xmltodict.parse(r.content)
+        return r.json()
 
     def create_employee_file_category(self, category_name):
         """

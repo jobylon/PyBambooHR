@@ -317,25 +317,65 @@ class test_employees(unittest.TestCase):
 
     @httpretty.activate
     def test_get_employee_files_list(self):
-        xml = """<?xml version="1.0"?>
-                    <employee id="123">
-                        <category id="14">
-                            <name>Training Attachments</name>
-                        </category>
-                        <category id="15">
-                            <name>Employee Uploads</name>
-                        </category>
-                    </employee>"""
+        resp = {
+            'employee': {
+                'id': 123
+            },
+            'categories': [
+                {
+                    'files': [
+                        {
+                            'canRenameFile': 'yes',
+                            'name': 'Company Handbook.pdf',
+                            'dateCreated': '2020-01-18T20:45:51+0000',
+                            'shareWithEmployee': 'yes',
+                            'canDeleteFile': 'yes',
+                            'createdBy': 'Charlotte Abbott',
+                            'canChangeShareWithEmployeeFieldValue': 'yes',
+                            'id': 4,
+                            'originalFileName': 'Company Handbook.pdf',
+                            'size': 2807480
+                        },
+                        {
+                            'canRenameFile': 'yes',
+                            'name': 'I-9 (2017).pdf',
+                            'dateCreated': '2020-01-18T21:25:11+0000',
+                            'shareWithEmployee': 'yes',
+                            'canDeleteFile': 'yes',
+                            'createdBy': 'Charlotte Abbott',
+                            'canChangeShareWithEmployeeFieldValue': 'yes',
+                            'id': 10,
+                            'originalFileName': 'I-9 (2017).pdf',
+                            'size': 2750869
+                        }
+                    ],
+                    'canDeleteCategory': 'no',
+                    'canUploadFiles': 'yes',
+                    'name': 'Signed Documents',
+                    'canRenameCategory': 'no',
+                    'displayIfEmpty': 'yes',
+                    'id': 12
+                },
+                {
+                    'files': [],
+                    'canDeleteCategory': 'no',
+                    'canUploadFiles': 'yes',
+                    'name': 'Tasklist Attachments',
+                    'canRenameCategory': 'no',
+                    'displayIfEmpty': 'yes',
+                    'id': 11
+                }
+            ]
+        }
         httpretty.register_uri(httpretty.GET,
                                "https://api.bamboohr.com/api/gateway.php/test/v1/employees/123/files/view",
-                               body=xml,
+                               body=json.dumps(resp),
                                status='200')
 
         data = self.bamboo.get_employee_files_list(123)
         self.assertIsNotNone(data.get('employee'))
-        self.assertIsNotNone(data['employee'].get('category'))
-        self.assertEqual(len(data['employee']['category']), 2)
-        self.assertEqual(data['employee']['category'][1]['@id'], '15')
+        self.assertIsNotNone(data.get('categories'))
+        self.assertEqual(len(data['categories']), 2)
 
     @httpretty.activate
     def test_create_file_category(self):
